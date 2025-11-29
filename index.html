@@ -35,6 +35,7 @@
     .muted { color: var(--muted) }
     .grid-3 { display:grid; gap:16px; grid-template-columns: repeat(3, minmax(0, 1fr)) }
     .grid-2 { display:grid; gap:16px; grid-template-columns: repeat(2, minmax(0, 1fr)) }
+    .grid-4 { display:grid; gap:16px; grid-template-columns: repeat(4, minmax(0, 1fr)) }
     .card { border-radius:18px; background: linear-gradient(180deg, var(--panel), var(--panel2)); box-shadow: 0 18px 60px rgba(0,0,0,0.45); padding:20px; border: 1px solid rgba(33,200,255,0.18) }
     .icon { width:46px; height:46px; border-radius:12px; display:grid; place-items:center; background: radial-gradient(circle at 50% 0%, rgba(33,200,255,0.25), rgba(33,200,255,0.08)); color: var(--neon); box-shadow: 0 10px 24px rgba(33,200,255,0.18) }
     input, select, textarea { width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(33,200,255,0.25); background:#0e1521; color:#d7e9ff; font-size:14px }
@@ -49,7 +50,7 @@
     .reveal.on { opacity:1; transform:translateY(0) }
     section, .hero { scroll-margin-top: 80px }
     @media (max-width: 900px) { .hero-inner { grid-template-columns:1fr; text-align:center } .mobile-toggle { display:inline-flex } .nav { position: fixed; top:0; right:0; width:74vw; max-width:340px; height:100dvh; background:#0b111d; box-shadow: -16px 0 40px rgba(0,0,0,0.35); display:flex; flex-direction:column; padding:18px; gap:10px; transform: translateX(100%); transition: transform .3s ease; z-index:60 } .nav.open { transform: translateX(0); display:flex } }
-    @media (max-width: 700px) { .grid-3, .grid-2 { grid-template-columns:1fr } .btn { padding:12px 18px } }
+    @media (max-width: 700px) { .grid-3, .grid-2, .grid-4 { grid-template-columns:1fr } .btn { padding:12px 18px } input, select, textarea { font-size:16px } .mock { width: 100%; height: 240px } }
     @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important } }
   </style>
 </head>
@@ -107,7 +108,7 @@
 
   <section id="como" class="section reveal">
     <h2>Como funciona</h2>
-    <div class="grid-4" style="display:grid; gap:16px; grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="grid-4">
       <div class="card"><strong>Passo 1:</strong> Criar conta</div>
       <div class="card"><strong>Passo 2:</strong> Configurar a IA</div>
       <div class="card"><strong>Passo 3:</strong> Conectar ao WhatsApp</div>
@@ -203,6 +204,19 @@
         <div class="muted" style="margin-top:8px">2) Caso seu navegador não tenha leitor de QR, digite o código:</div>
         <div style="display:flex; gap:10px; margin-top:8px"><input id="bindCode" placeholder="Cole o código lido" /><button id="bindDo" class="btn btn-primary">Conectar</button></div>
         <div class="muted" style="margin-top:8px">Após conectar, o status acima muda para “Conectado”.</div>
+      </div>
+      <div class="card">
+        <h3>Tutorial de Configuração</h3>
+        <ol style="margin:0; padding-left:20px">
+          <li>Escreva o treino com TOM, saudação, regras e FAQ.</li>
+          <li>Adicione respostas preferidas e gatilhos.</li>
+          <li>Carregue a logo oficial no Admin.</li>
+          <li>Gere e escaneie o QR para conectar o WhatsApp.</li>
+          <li>Valide e ative a IA.</li>
+        </ol>
+        <div id="uChecklist" style="margin-top:10px" class="muted"></div>
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap"><button id="uValidate" class="btn btn-secondary">Validar Configuração</button><button id="uActivate" class="btn btn-primary">Ativar IA</button></div>
+        <div id="uReady" style="margin-top:8px"></div>
       </div>
     </div>
   </section>
@@ -350,6 +364,10 @@
     document.getElementById('respAdd').addEventListener('click',()=>{ const u=me(); if(!u) return; const v=document.getElementById('respIn').value.trim(); if(!v) return; u.ai.responses=u.ai.responses||[]; u.ai.responses.push(v); updateUser(u); incMetric('msg'); document.getElementById('respIn').value=''; showUser() });
     document.getElementById('gatAdd').addEventListener('click',()=>{ const u=me(); if(!u) return; const v=document.getElementById('gatIn').value.trim(); if(!v) return; u.ai.triggers=u.ai.triggers||[]; u.ai.triggers.push(v); updateUser(u); incMetric('conv'); document.getElementById('gatIn').value=''; showUser() });
     document.getElementById('trainSave').addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.training=document.getElementById('trainText').value; updateUser(u); incMetric('cli'); alert('Treino salvo'); showUser() });
+    function checklist(u){ const items=[]; const hasLogo=!!localStorage.getItem(L_LOGO); const hasTrain=(u.ai.training||'').trim().length>=60; const hasResp=(u.ai.responses||[]).length>0; const hasTrig=(u.ai.triggers||[]).length>0; const wa=u.whatsapp.connected; items.push({ok:hasLogo, text:'Logo oficial carregada'}); items.push({ok:hasTrain, text:'Treino preenchido com TOM, saudação, regras e FAQ'}); items.push({ok:hasResp, text:'Pelo menos 1 resposta preferida'}); items.push({ok:hasTrig, text:'Pelo menos 1 gatilho'}); items.push({ok:wa, text:'WhatsApp conectado pelo QR'}); return {items, ready: hasLogo&&hasTrain&&hasResp&&hasTrig&&wa} }
+    function renderTutorial(){ const u=me(); if(!u) return; const c=checklist(u); const el=document.getElementById('uChecklist'); const rd=document.getElementById('uReady'); if(el) el.innerHTML=c.items.map(i=>`<div>${i.ok?'✅':'❌'} ${i.text}</div>`).join(''); if(rd) rd.textContent=c.ready?'Tudo pronto para usar.':'Faltam itens na configuração.' }
+    document.getElementById('uValidate')?.addEventListener('click',()=>{ renderTutorial() });
+    document.getElementById('uActivate')?.addEventListener('click',()=>{ const u=me(); if(!u) return; const c=checklist(u); if(!c.ready){ renderTutorial(); alert('Complete os itens pendentes antes de ativar.'); return; } u.ai.enabled=true; updateUser(u); showUser(); renderTutorial(); alert('IA ativada e pronta para usar.') })
     document.getElementById('adDo').addEventListener('click',()=>{ const u=document.getElementById('adUser').value; const p=document.getElementById('adPass').value; if(u==='Admin'&&p==='Luckas2411'){ document.getElementById('adLogin').style.display='none'; document.getElementById('adPanel').style.display='block'; renderAdmin(); } else { alert('Credenciais inválidas') } });
     document.getElementById('adLogoSave').addEventListener('click',async()=>{ const f=document.getElementById('adLogoFile').files[0]; if(!f){ alert('Selecione um arquivo de imagem'); return; } const du=await fileToDataUrl(f); if(!du){ alert('Falha ao ler arquivo'); return; } localStorage.setItem(L_LOGO,du); applyLogo(); alert('Logo atualizada'); });
     document.getElementById('adLogoSave').addEventListener('click',async()=>{ const f=document.getElementById('adLogoFile').files[0]; if(!f){ alert('Selecione um arquivo de imagem'); return; } const du=await fileToDataUrl(f); if(!du){ alert('Falha ao ler arquivo'); return; } localStorage.setItem(L_LOGO,du); applyLogo(); alert('Logo atualizada'); });
