@@ -123,7 +123,7 @@
   <section id="depoimentos" class="section reveal">
     <h2>Depoimentos</h2>
     <div class="grid-3">
-      <div class="card"><strong>João Martins – ⭐⭐⭐⭐⭐</strong><div class="muted">Minha IA configurada em 1 dia, atendimento perfeito.</div></div>
+      <div class="card"><strong>João Martins – ⭐⭐⭐⭐⭐</strong><div class="muted">Minha IA configurada em menos de 1 dia, atendimento perfeito.</div></div>
       <div class="card"><strong>Carla Ribeiro – ⭐⭐⭐⭐⭐</strong><div class="muted">Fluxos ficaram como eu queria, super profissional.</div></div>
       <div class="card"><strong>Matheus A. – ⭐⭐⭐⭐⭐</strong><div class="muted">Conexão rápida com WhatsApp e métricas claras.</div></div>
       <div class="card"><strong>Bruna Costa – ⭐⭐⭐⭐⭐</strong><div class="muted">Vendas automáticas funcionando 24h.</div></div>
@@ -161,8 +161,8 @@
     <div class="grid-2">
       <div class="card">
         <h3>Status</h3>
-        <div class="muted">IA: <span id="uAi"></span> · WhatsApp: <span id="uWa"></span></div>
-        <div style="display:flex; gap:10px; margin-top:10px"><button id="uToggleAi" class="btn btn-primary">Ativar/Desativar IA</button><button id="uToggleWa" class="btn btn-secondary">Conectar/Desconectar WhatsApp</button><button id="uLogout" class="btn btn-secondary">Sair</button></div>
+        <div class="muted">IA: <span id="uAi"></span> · WhatsApp: <span id="uWa"></span> · Modo humano: <span id="uHo"></span></div>
+        <div style="display:flex; gap:10px; margin-top:10px"><button id="uToggleAi" class="btn btn-primary">Ativar/Desativar IA</button><button id="uToggleWa" class="btn btn-secondary">Conectar/Desconectar WhatsApp</button><button id="uHandover" class="btn btn-secondary">Atendimento humano</button><button id="uResume" class="btn btn-secondary">Retomar IA</button><button id="uLogout" class="btn btn-secondary">Sair</button></div>
       </div>
       <div class="card">
         <h3>Métricas</h3>
@@ -180,7 +180,7 @@
       </div>
       <div class="card">
         <h3>Treinamento</h3>
-        <textarea id="trainText" placeholder="Cole textos/FAQ/dados do negócio"></textarea>
+        <textarea id="trainText" placeholder="Escreva de forma específica como a IA deve responder. Exemplo:\nTOM: profissional, amigável, objetivo\nSAUDAÇÃO: Olá! Sou a IA da LUXIAFLOW. Como posso ajudar?\nENCERRAMENTO: Obrigado pelo contato! Qualquer dúvida, estou à disposição.\nPREÇO: sob orçamento conforme complexidade\nPRAZO: 1 a 3 dias\nPAGAMENTO: PIX e cartão\nHORÁRIO: 08h às 20h\nCONTATO: WhatsApp 35 9XXXX-XXXX\nFAQ: Entrega? Em até 48h após confirmação\nREGRA: Nunca compartilhe dados sensíveis\nQ: Vocês fazem loja virtual?\nA: Sim, criamos lojas completas com checkout e catálogo."></textarea>
         <div style="margin-top:10px"><button id="trainSave" class="btn btn-secondary">Salvar Treino</button></div>
       </div>
       <div class="card">
@@ -230,6 +230,11 @@
           <h3>Assinaturas</h3>
           <div style="display:flex; gap:10px"><input id="asEmail" placeholder="Email do usuário" /><select id="asPlan"></select><button id="asSet" class="btn btn-secondary">Definir Plano</button></div>
         </div>
+        <div class="card">
+          <h3>Marca e Logo</h3>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap"><input id="adLogoFile" type="file" accept="image/*" /><button id="adLogoSave" class="btn btn-primary">Salvar Logo</button></div>
+          <div class="muted" style="margin-top:8px">A logo oficial será usada em todas as telas. Use exatamente o arquivo enviado.</div>
+        </div>
       </div>
     </div>
   </section>
@@ -252,6 +257,7 @@
     const L_PLANS='lux_plans';
     const L_SESS='lux_session';
     const L_MET='lux_metrics';
+    const L_LOGO='lux_logo';
     function seed(){ if(!localStorage.getItem(L_PLANS)){ localStorage.setItem(L_PLANS, JSON.stringify([
       {id:'basic', name:'Básico', price:29, features:['Respostas automáticas','Fluxos simples','Conexão WhatsApp']},
       {id:'pro', name:'Profissional', price:59, features:['Treino personalizado','Dashboard avançado','Leads e métricas']},
@@ -267,7 +273,9 @@
     function getMetrics(){ try{return JSON.parse(localStorage.getItem(L_MET)||'{}')}catch{return{}} }
     function setMetrics(v){ localStorage.setItem(L_MET, JSON.stringify(v)) }
     function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36) }
-    function register(name,email,whats,pass){ const users=getUsers(); if(users.find(u=>u.email===email)) return {ok:false,msg:'Email já cadastrado'}; const id=uid(); const u={id,name,email,whats,pass,plan:'basic',active:true,ai:{enabled:false,responses:[],triggers:[],training:''},whatsapp:{connected:false}}; users.push(u); setUsers(users); setMetrics(Object.assign(getMetrics(),{[id]:{messages:0,conversations:0,clients:0}})); setSession({id,email}); return {ok:true,id} }
+    function applyLogo(){ const src=localStorage.getItem(L_LOGO)||'logo.png'; document.querySelectorAll('img.logo').forEach(el=>{ el.src=src; }); }
+    async function fileToDataUrl(file){ return new Promise((res,reject)=>{ if(!file){ res(null); return; } const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=reject; r.readAsDataURL(file); }); }
+    function register(name,email,whats,pass){ const users=getUsers(); if(users.find(u=>u.email===email)) return {ok:false,msg:'Email já cadastrado'}; const id=uid(); const u={id,name,email,whats,pass,plan:'basic',active:true,ai:{enabled:false,handover:false,responses:[],triggers:[],training:''},whatsapp:{connected:false}}; users.push(u); setUsers(users); setMetrics(Object.assign(getMetrics(),{[id]:{messages:0,conversations:0,clients:0}})); setSession({id,email}); return {ok:true,id} }
     function login(email,pass){ const u=getUsers().find(u=>u.email===email&&u.pass===pass); if(!u) return {ok:false}; setSession({id:u.id,email}); return {ok:true,id:u.id} }
     function logout(){ setSession(null) }
     function me(){ const s=getSession(); if(!s) return null; return getUsers().find(u=>u.id===s.id) }
@@ -299,13 +307,17 @@
     overlay.addEventListener('click',toggleMenu);
     nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ if(nav.classList.contains('open')) toggleMenu(); }));
     renderPlans();
+    applyLogo();
+    applyLogo();
     document.getElementById('genQR').addEventListener('click',genBindQR);
     document.getElementById('scanQR').addEventListener('click',startScan);
     document.getElementById('stopScan').addEventListener('click',stopScan);
     document.getElementById('bindDo').addEventListener('click',()=>{ const code=document.getElementById('bindCode').value.trim(); handleBind(code) });
     function pushChat(text,who){ const box=document.getElementById('uChat'); const d=document.createElement('div'); d.style.borderRadius='12px'; d.style.padding='10px 12px'; d.style.maxWidth='80%'; d.style.background= who==='user' ? '#162235' : '#0f1a2b'; d.style.alignSelf= who==='user' ? 'flex-end' : 'flex-start'; d.textContent=text; box.appendChild(d); box.scrollTop=box.scrollHeight }
     function tokenize(s){ return (s||'').toLowerCase().replace(/[^a-z0-9áéíóúâêîôûãõç ]/g,' ').split(/\s+/).filter(Boolean) }
-    function aiReply(q,u){ const t=tokenize(q); const train=(u.ai.training||'').toLowerCase(); const triggers=(u.ai.triggers||[]).map(x=>x.toLowerCase()); const responses=u.ai.responses||[];
+    function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+    function parseTrain(train){ const cfg={}; const lines=(train||'').split(/\n+/).map(s=>s.trim()); cfg.faq=[]; for(const ln of lines){ if(/^tom\s*:/i.test(ln)) cfg.tone=ln.split(':')[1].trim(); else if(/^saudação\s*:/i.test(ln)) cfg.greet=ln.split(':')[1].trim(); else if(/^encerramento\s*:/i.test(ln)) cfg.close=ln.split(':')[1].trim(); else if(/^regra\s*:/i.test(ln)) { cfg.rules=(cfg.rules||[]); cfg.rules.push(ln.split(':')[1].trim()); } else if(/^q\s*:/i.test(ln)) { cfg.faq.push({q:ln.split(':')[1].trim(),a:''}); } else if(/^a\s*:/i.test(ln)) { const last=cfg.faq[cfg.faq.length-1]; if(last) last.a=ln.split(':')[1].trim(); } } return cfg }
+    function aiReply(q,u){ if(u.ai.handover) return null; const t=tokenize(q); const trainRaw=(u.ai.training||''); const train=trainRaw.toLowerCase(); const cfg=parseTrain(trainRaw); const triggers=(u.ai.triggers||[]).map(x=>x.toLowerCase()); const responses=u.ai.responses||[];
       const intent=(keys)=> keys.some(k=> t.includes(k));
       const kb={
         price: intent(['preço','valor','custa','orçamento']),
@@ -314,27 +326,33 @@
         payment: intent(['pagamento','pix','cartão','pagar']),
         contact: intent(['contato','whatsapp','telefone']),
       };
-      for(const trg of triggers){ if(t.includes(trg)){ const res=responses[0]||'Entendi. Vou enviar as informações que você precisa.'; return res; } }
-      if(kb.price){ const fromTrain=(train.match(/preço[:\-]\s*(.*)/)||train.match(/valor[:\-]\s*(.*)/)); if(fromTrain) return 'Sobre valores: '+fromTrain[1]; return 'Os valores variam conforme a necessidade. Posso preparar um orçamento com base no que você precisa.' }
-      if(kb.hours){ const m=(train.match(/horário[:\-]\s*(.*)/)); if(m) return 'Nosso horário: '+m[1]; return 'Atendemos em janelas estendidas e respondemos rápido, inclusive fora do horário comercial.' }
-      if(kb.delivery){ const m=(train.match(/prazo[:\-]\s*(.*)/)); if(m) return 'Prazo: '+m[1]; return 'O prazo depende do escopo. Em geral, entregamos entre 1 e 3 dias.' }
-      if(kb.payment){ const m=(train.match(/pagamento[:\-]\s*(.*)/)); if(m) return 'Formas de pagamento: '+m[1]; return 'Aceitamos confirmação via WhatsApp e PIX. Posso enviar os dados agora.' }
-      if(kb.contact){ const m=(train.match(/contato[:\-]\s*(.*)/)); if(m) return 'Contato: '+m[1]; return 'Você pode falar com a gente pelo WhatsApp. Posso abrir o chat para você.' }
+      for(const trg of triggers){ if(t.includes(trg)){ const res=rnd([responses[0],'Certo, já envio as informações.','Perfeito, vou cuidar disso agora.'].filter(Boolean)); return [cfg.greet,res,cfg.close].filter(Boolean).join(' ') } }
+      if(kb.price){ const fromTrain=(train.match(/preço[:\-]\s*(.*)/)||train.match(/valor[:\-]\s*(.*)/)); const base=rnd(['Os valores variam conforme a necessidade.','Trabalhamos sob demanda, o valor depende do escopo.','O investimento é calculado conforme a complexidade.']); const msg=(fromTrain?(' '+fromTrain[1]):''); return [cfg.greet,base+msg,'Posso estimar agora se preferir.',cfg.close].filter(Boolean).join(' ') }
+      if(kb.hours){ const m=(train.match(/horário[:\-]\s*(.*)/)); const base=rnd(['Temos atendimento em janelas estendidas.','Respondemos rápido ao longo do dia.']); const msg=(m?(' Horário: '+m[1]):''); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
+      if(kb.delivery){ const m=(train.match(/prazo[:\-]\s*(.*)/)); const base=rnd(['O prazo depende do escopo.','A entrega é ágil e organizada.']); const msg=(m?(' Prazo: '+m[1]):' Em geral, 1–3 dias.'); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
+      if(kb.payment){ const m=(train.match(/pagamento[:\-]\s*(.*)/)); const base=rnd(['Podemos confirmar via WhatsApp.','Suportamos PIX e cartão.']); const msg=(m?(' Formas: '+m[1]):''); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
+      if(kb.contact){ const m=(train.match(/contato[:\-]\s*(.*)/)); const msg=(m?(' Contato: '+m[1]):'Posso te encaminhar ao WhatsApp agora.'); return [cfg.greet,msg,cfg.close].filter(Boolean).join(' ') }
+      let best=null,score=0; for(const qa of (cfg.faq||[])){ const toks=tokenize(qa.q); const s=toks.filter(x=>t.includes(x)).length; if(s>score){ score=s; best=qa } }
+      if(best&&best.a){ return [cfg.greet,best.a,cfg.close].filter(Boolean).join(' ') }
       const domainWords=(train.match(/[a-záéíóúâêîôûãõç]{4,}/gi)||[]).slice(0,12).filter((v,i,a)=>a.indexOf(v)===i);
-      if(domainWords.length){ return 'Somos especialistas em '+domainWords.slice(0,4).join(', ')+' e atendemos de forma personalizada. Me diga o que precisa que eu te guio.' }
-      return 'Posso ajudar com preços, prazos, pagamento e detalhes do seu pedido. Me conte sua necessidade.'
+      if(domainWords.length){ const base=rnd(['Somos especialistas em','Trabalhamos intensamente com','Temos domínio em']); return [cfg.greet,base+' '+domainWords.slice(0,4).join(', ')+'. Me diga o que precisa.',cfg.close].filter(Boolean).join(' ') }
+      return [cfg.greet,'Posso ajudar com preços, prazos, pagamento e detalhes do seu pedido. Me conte sua necessidade.',cfg.close].filter(Boolean).join(' ')
     }
-    document.getElementById('uSend').addEventListener('click',()=>{ const u=me(); if(!u){ alert('Entre na conta primeiro'); return;} const ask=document.getElementById('uAsk').value.trim(); if(!ask) return; pushChat(ask,'user'); const ans=aiReply(ask,u); setTimeout(()=>{ pushChat(ans,'bot'); },500) });
+    document.getElementById('uSend').addEventListener('click',()=>{ const u=me(); if(!u){ alert('Entre na conta primeiro'); return;} const ask=document.getElementById('uAsk').value.trim(); if(!ask) return; pushChat(ask,'user'); const ans=aiReply(ask,u); if(ans===null){ pushChat('Atendimento humano assumiu. A IA está pausada.','bot'); return; } setTimeout(()=>{ pushChat(ans,'bot'); },500) });
     document.getElementById('rDo').addEventListener('click',()=>{ const ok=register(document.getElementById('rName').value,document.getElementById('rEmail').value,document.getElementById('rWhats').value,document.getElementById('rPass').value); if(!ok.ok){ alert(ok.msg||'Erro'); return; } alert('Conta criada'); showUser(); });
     document.getElementById('lDo').addEventListener('click',()=>{ const ok=login(document.getElementById('lEmail').value,document.getElementById('lPass').value); if(!ok.ok){ alert('Credenciais inválidas'); return; } showUser(); });
-    function showUser(){ const u=me(); if(!u){ document.getElementById('user').style.display='none'; return; } document.getElementById('user').style.display='block'; document.getElementById('uAi').textContent=u.ai.enabled?'Ativa':'Inativa'; document.getElementById('uWa').textContent=u.whatsapp.connected?'Conectado':'Desconectado'; const met=getMetrics()[u.id]||{messages:0,conversations:0,clients:0}; document.getElementById('mMsg').textContent=met.messages; document.getElementById('mConv').textContent=met.conversations; document.getElementById('mCli').textContent=met.clients; const respList=document.getElementById('respList'); respList.innerHTML=''; for(const r of (u.ai.responses||[])){ const li=document.createElement('li'); li.textContent=r; respList.appendChild(li);} const gatList=document.getElementById('gatList'); gatList.innerHTML=''; for(const g of (u.ai.triggers||[])){ const li=document.createElement('li'); li.textContent=g; gatList.appendChild(li);} document.getElementById('trainText').value=u.ai.training||''; }
+    function showUser(){ const u=me(); if(!u){ document.getElementById('user').style.display='none'; return; } document.getElementById('user').style.display='block'; document.getElementById('uAi').textContent=u.ai.enabled?'Ativa':'Inativa'; document.getElementById('uWa').textContent=u.whatsapp.connected?'Conectado':'Desconectado'; const ho=document.getElementById('uHo'); if(ho) ho.textContent=u.ai.handover?'Ligado':'Desligado'; const met=getMetrics()[u.id]||{messages:0,conversations:0,clients:0}; document.getElementById('mMsg').textContent=met.messages; document.getElementById('mConv').textContent=met.conversations; document.getElementById('mCli').textContent=met.clients; const respList=document.getElementById('respList'); respList.innerHTML=''; for(const r of (u.ai.responses||[])){ const li=document.createElement('li'); li.textContent=r; respList.appendChild(li);} const gatList=document.getElementById('gatList'); gatList.innerHTML=''; for(const g of (u.ai.triggers||[])){ const li=document.createElement('li'); li.textContent=g; gatList.appendChild(li);} document.getElementById('trainText').value=u.ai.training||''; }
     document.getElementById('uToggleAi').addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.enabled=!u.ai.enabled; updateUser(u); showUser() });
     document.getElementById('uToggleWa').addEventListener('click',()=>{ const u=me(); if(!u) return; u.whatsapp.connected=!u.whatsapp.connected; updateUser(u); showUser() });
+    document.getElementById('uHandover')?.addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.handover=true; updateUser(u); showUser(); alert('IA pausada: atendimento humano assumiu.') });
+    document.getElementById('uResume')?.addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.handover=false; updateUser(u); showUser(); alert('IA retomada.') });
     document.getElementById('uLogout').addEventListener('click',()=>{ logout(); alert('Você saiu'); document.getElementById('user').style.display='none' });
     document.getElementById('respAdd').addEventListener('click',()=>{ const u=me(); if(!u) return; const v=document.getElementById('respIn').value.trim(); if(!v) return; u.ai.responses=u.ai.responses||[]; u.ai.responses.push(v); updateUser(u); incMetric('msg'); document.getElementById('respIn').value=''; showUser() });
     document.getElementById('gatAdd').addEventListener('click',()=>{ const u=me(); if(!u) return; const v=document.getElementById('gatIn').value.trim(); if(!v) return; u.ai.triggers=u.ai.triggers||[]; u.ai.triggers.push(v); updateUser(u); incMetric('conv'); document.getElementById('gatIn').value=''; showUser() });
     document.getElementById('trainSave').addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.training=document.getElementById('trainText').value; updateUser(u); incMetric('cli'); alert('Treino salvo'); showUser() });
     document.getElementById('adDo').addEventListener('click',()=>{ const u=document.getElementById('adUser').value; const p=document.getElementById('adPass').value; if(u==='Admin'&&p==='Luckas2411'){ document.getElementById('adLogin').style.display='none'; document.getElementById('adPanel').style.display='block'; renderAdmin(); } else { alert('Credenciais inválidas') } });
+    document.getElementById('adLogoSave').addEventListener('click',async()=>{ const f=document.getElementById('adLogoFile').files[0]; if(!f){ alert('Selecione um arquivo de imagem'); return; } const du=await fileToDataUrl(f); if(!du){ alert('Falha ao ler arquivo'); return; } localStorage.setItem(L_LOGO,du); applyLogo(); alert('Logo atualizada'); });
+    document.getElementById('adLogoSave').addEventListener('click',async()=>{ const f=document.getElementById('adLogoFile').files[0]; if(!f){ alert('Selecione um arquivo de imagem'); return; } const du=await fileToDataUrl(f); if(!du){ alert('Falha ao ler arquivo'); return; } localStorage.setItem(L_LOGO,du); applyLogo(); alert('Logo atualizada'); });
     function renderAdmin(){ const users=getUsers(); const plans=getPlans(); const tbody=document.querySelector('#tUsers tbody'); tbody.innerHTML=''; for(const u of users){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${u.name}</td><td>${u.email}</td><td>${u.ai.enabled?'Ativa':'Inativa'}</td><td>${u.whatsapp.connected?'Conectado':'Desconectado'}</td><td>${plans.find(p=>p.id===u.plan)?.name||u.plan}</td><td>${u.active?'Ativo':'Inativo'}</td><td><button data-act='toggle' data-id='${u.id}'>Ativar/Desativar</button></td>`; tbody.appendChild(tr);} tbody.querySelectorAll('button').forEach(b=>b.addEventListener('click',onAdminUserAction)); const met=getMetrics(); const tbodyM=document.querySelector('#tMetrics tbody'); tbodyM.innerHTML=''; for(const u of users){ const m=met[u.id]||{messages:0,conversations:0,clients:0}; const tr=document.createElement('tr'); tr.innerHTML=`<td>${u.email}</td><td>${m.messages}</td><td>${m.conversations}</td><td>${m.clients}</td>`; tbodyM.appendChild(tr);} const adPlans=document.getElementById('adPlans'); adPlans.innerHTML=''; for(const p of plans){ const card=document.createElement('div'); card.className='card'; card.innerHTML=`<h4>${p.name}</h4><div class='muted'>R$ ${p.price}/mês</div><ul style='margin-top:8px'>${p.features.map(f=>`<li>${f}</li>`).join('')}</ul><div style='display:flex; gap:10px; margin-top:8px'><input data-id='${p.id}' class='pPrice' placeholder='Novo preço' /><button data-id='${p.id}' class='pSave btn btn-secondary'>Salvar</button></div>`; adPlans.appendChild(card);} const asPlan=document.getElementById('asPlan'); asPlan.innerHTML=''; for(const p of plans){ const opt=document.createElement('option'); opt.value=p.id; opt.textContent=p.name; asPlan.appendChild(opt); }
     }
     function onAdminUserAction(e){ const id=e.currentTarget.getAttribute('data-id'); const users=getUsers(); const i=users.findIndex(u=>u.id===id); if(i>-1){ users[i].active=!users[i].active; setUsers(users); renderAdmin(); } }
@@ -343,3 +361,5 @@
   </script>
 </body>
 </html>
+    function applyLogo(){ const src=localStorage.getItem(L_LOGO)||'logo.png'; document.querySelectorAll('img.logo').forEach(el=>{ el.src=src; }); }
+    async function fileToDataUrl(file){ return new Promise((res,reject)=>{ if(!file){ res(null); return; } const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=reject; r.readAsDataURL(file); }); }
