@@ -7,6 +7,7 @@
   <meta name="description" content="LUXIAFLOW – IA: Automação inteligente para WhatsApp com fluxos, respostas e treinamento personalizado." />
   <meta name="theme-color" content="#0a0f16" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <link id="favicon" rel="icon" href="logo.png" />
   <style>
     :root { --bg:#0a0f16; --panel:#0e1521; --panel2:#111a29; --neon:#21c8ff; --neon2:#00aaff; --text:#e8f1ff; --muted:#a2b3c8; --white:#ffffff; }
     * { box-sizing: border-box; }
@@ -167,7 +168,7 @@
       </div>
       <div class="card">
         <h3>Métricas</h3>
-        <div class="muted">Mensagens: <span id="mMsg">0</span> · Conversas: <span id="mConv">0</span> · Clientes: <span id="mCli">0</span></div>
+        <div class="muted">Mensagens: <span id="mMsg">0</span> · Conversas: <span id="mConv">0</span> · Clientes: <span id="mCli">0</span> · Intenções: <span id="mInt">0</span></div>
       </div>
       <div class="card">
         <h3>Editor de respostas automáticas</h3>
@@ -181,8 +182,13 @@
       </div>
       <div class="card">
         <h3>Treinamento</h3>
-        <textarea id="trainText" placeholder="Escreva de forma específica como a IA deve responder. Exemplo:\nTOM: profissional, amigável, objetivo\nSAUDAÇÃO: Olá! Sou a IA da LUXIAFLOW. Como posso ajudar?\nENCERRAMENTO: Obrigado pelo contato! Qualquer dúvida, estou à disposição.\nPREÇO: sob orçamento conforme complexidade\nPRAZO: 1 a 3 dias\nPAGAMENTO: PIX e cartão\nHORÁRIO: 08h às 20h\nCONTATO: WhatsApp 35 9XXXX-XXXX\nFAQ: Entrega? Em até 48h após confirmação\nREGRA: Nunca compartilhe dados sensíveis\nQ: Vocês fazem loja virtual?\nA: Sim, criamos lojas completas com checkout e catálogo."></textarea>
+        <textarea id="trainText" placeholder="Escreva de forma específica como a IA deve responder. Exemplo:\nTOM: profissional, amigável, objetivo\nSAUDAÇÃO: Olá! Sou a IA da LUXIAFLOW. Como posso ajudar?\nENCERRAMENTO: Obrigado pelo contato! Qualquer dúvida, estou à disposição.\nPREÇO: sob orçamento conforme complexidade\nPRAZO: 1 a 3 dias\nPAGAMENTO: PIX e cartão\nHORÁRIO: 08h às 20h\nOFFLINE: Estamos fora do horário. Vou registrar e retornamos.\nCONTATO: WhatsApp 35 9XXXX-XXXX\nFAQ: Entrega? Em até 48h após confirmação\nREGRA: Nunca compartilhe dados sensíveis\nQ: Vocês fazem loja virtual?\nA: Sim, criamos lojas completas com checkout e catálogo."></textarea>
         <div style="margin-top:10px"><button id="trainSave" class="btn btn-secondary">Salvar Treino</button></div>
+      </div>
+      <div class="card">
+        <h3>Fluxos de Atendimento</h3>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap"><input id="flowTrig" placeholder="Gatilho do fluxo" /><input id="flowResp" placeholder="Resposta/ação do fluxo" style="flex:1" /><button id="flowAdd" class="btn btn-secondary">Adicionar fluxo</button></div>
+        <ul id="flowList" style="margin-top:8px"></ul>
       </div>
       <div class="card">
         <h3>Testar IA</h3>
@@ -234,7 +240,7 @@
         </div>
         <div class="card">
           <h3>Métricas</h3>
-          <div class="table-wrap"><table class="table" id="tMetrics"><thead><tr><th>Email</th><th>Mensagens</th><th>Conversas</th><th>Clientes</th></tr></thead><tbody></tbody></table></div>
+          <div class="table-wrap"><table class="table" id="tMetrics"><thead><tr><th>Email</th><th>Mensagens</th><th>Conversas</th><th>Clientes</th><th>Intenções</th></tr></thead><tbody></tbody></table></div>
         </div>
         <div class="card">
           <h3>Planos</h3>
@@ -246,8 +252,8 @@
         </div>
         <div class="card">
           <h3>Marca e Logo</h3>
-          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap"><input id="adLogoFile" type="file" accept="image/*" /><button id="adLogoSave" class="btn btn-primary">Salvar Logo</button></div>
-          <div class="muted" style="margin-top:8px">A logo oficial será usada em todas as telas. Use exatamente o arquivo enviado.</div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap"><input id="adLogoUrl" placeholder="URL direto para .png" style="flex:1" /><input id="adLogoFile" type="file" accept="image/*" /><button id="adLogoSave" class="btn btn-primary">Salvar Logo</button></div>
+          <div class="muted" style="margin-top:8px">A logo oficial será usada em todas as telas. Recomenda-se usar o URL direto para PNG fornecido.</div>
         </div>
       </div>
     </div>
@@ -257,7 +263,6 @@
     <div class="footer-inner">
       <div class="brand"><img class="logo" src="logo.png" alt="LUXIAFLOW – IA" style="width:120px" /></div>
       <div class="footer-links">
-        <a href="#admin">Admin</a>
         <a href="#">Termos</a>
         <a href="#">Direitos autorais</a>
         <span class="muted">Feito por Lucas</span>
@@ -271,7 +276,8 @@
     const L_PLANS='lux_plans';
     const L_SESS='lux_session';
     const L_MET='lux_metrics';
-    const L_LOGO='lux_logo';
+    const L_LOGO_URL='lux_logo_url';
+    const DEFAULT_LOGO_URL='https://SEU-LINK-AQUI.com/luxiaflow.png';
     function seed(){ if(!localStorage.getItem(L_PLANS)){ localStorage.setItem(L_PLANS, JSON.stringify([
       {id:'basic', name:'Básico', price:29, features:['Respostas automáticas','Fluxos simples','Conexão WhatsApp']},
       {id:'pro', name:'Profissional', price:59, features:['Treino personalizado','Dashboard avançado','Leads e métricas']},
@@ -287,15 +293,17 @@
     function getMetrics(){ try{return JSON.parse(localStorage.getItem(L_MET)||'{}')}catch{return{}} }
     function setMetrics(v){ localStorage.setItem(L_MET, JSON.stringify(v)) }
     function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36) }
-    function applyLogo(){ const src=localStorage.getItem(L_LOGO)||'logo.png'; document.querySelectorAll('img.logo').forEach(el=>{ el.src=src; }); }
+    const FALLBACK_SVG='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="24" fill="#0b1526"/><circle cx="128" cy="128" r="72" fill="#10233d" stroke="#2dd4ff" stroke-width="6"/><text x="128" y="140" font-size="44" fill="#2dd4ff" text-anchor="middle" font-family="Poppins">LUXIA</text></svg>');
+    function currentLogoUrl(){ return localStorage.getItem(L_LOGO_URL) || DEFAULT_LOGO_URL }
+    function applyLogo(){ const url=currentLogoUrl(); const imgs=document.querySelectorAll('img.logo'); imgs.forEach(el=>{ el.onerror=()=>{ el.src=FALLBACK_SVG }; el.src=url; }); const fav=document.getElementById('favicon'); if(fav) fav.href=url; }
     async function fileToDataUrl(file){ return new Promise((res,reject)=>{ if(!file){ res(null); return; } const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=reject; r.readAsDataURL(file); }); }
     function register(name,email,whats,pass){ const users=getUsers(); if(users.find(u=>u.email===email)) return {ok:false,msg:'Email já cadastrado'}; const id=uid(); const u={id,name,email,whats,pass,plan:'basic',active:true,ai:{enabled:false,handover:false,responses:[],triggers:[],training:''},whatsapp:{connected:false}}; users.push(u); setUsers(users); setMetrics(Object.assign(getMetrics(),{[id]:{messages:0,conversations:0,clients:0}})); setSession({id,email}); return {ok:true,id} }
     function login(email,pass){ const u=getUsers().find(u=>u.email===email&&u.pass===pass); if(!u) return {ok:false}; setSession({id:u.id,email}); return {ok:true,id:u.id} }
     function logout(){ setSession(null) }
     function me(){ const s=getSession(); if(!s) return null; return getUsers().find(u=>u.id===s.id) }
     function updateUser(user){ const users=getUsers(); const i=users.findIndex(x=>x.id===user.id); if(i>-1){ users[i]=user; setUsers(users); } }
-    function incMetric(type){ const s=getSession(); if(!s) return; const met=getMetrics(); const m=met[s.id]||{messages:0,conversations:0,clients:0}; if(type==='msg') m.messages++; if(type==='conv') m.conversations++; if(type==='cli') m.clients++; met[s.id]=m; setMetrics(met) }
-    function renderPlans(){ const el=document.getElementById('plans'); el.innerHTML=''; const ps=getPlans(); for(const p of ps){ const div=document.createElement('div'); div.className='card'; div.innerHTML=`<h3>${p.name}</h3><div class='muted'>R$ ${p.price}/mês</div><ul style='margin-top:8px'>${p.features.map(f=>`<li>${f}</li>`).join('')}</ul><div style='margin-top:10px'><a href='#conta' class='btn btn-primary'>Assinar</a></div>`; el.appendChild(div);} }
+    function incMetric(type){ const s=getSession(); if(!s) return; const met=getMetrics(); const m=met[s.id]||{messages:0,conversations:0,clients:0,intent:0}; if(type==='msg') m.messages++; if(type==='conv') m.conversations++; if(type==='cli') m.clients++; if(type==='intent') m.intent++; met[s.id]=m; setMetrics(met) }
+    function renderPlans(){ const el=document.getElementById('plans'); el.innerHTML=''; const ps=getPlans(); for(const p of ps){ const div=document.createElement('div'); div.className='card'; div.innerHTML=`<h3>${p.name}</h3><div class='muted'>R$ ${p.price}/mês</div><ul style='margin-top:8px'>${p.features.map(f=>`<li>${f}</li>`).join('')}</ul><div style='margin-top:10px'><div class='muted'>Para contratar qualquer plano, fale diretamente no WhatsApp: 35 98473-4190.</div><a href='https://wa.me/5535984734190?text=Quero%20assinar%20o%20plano%20${encodeURIComponent(p.name)}%20da%20LUXIAFLOW%20IA' class='btn btn-primary' target='_blank' rel='noopener'>Falar no WhatsApp</a></div>`; el.appendChild(div);} }
     let scanning=false; let stream=null; let detector=null;
     function genBindQR(){ const u=me(); if(!u){ alert('Entre na conta primeiro'); return;} const payload='BIND:'+u.id; const img=document.getElementById('qrImg'); img.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(payload); }
     async function startScan(){ const video=document.getElementById('qrVideo'); try{
@@ -322,16 +330,17 @@
     nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ if(nav.classList.contains('open')) toggleMenu(); }));
     renderPlans();
     applyLogo();
-    applyLogo();
     document.getElementById('genQR').addEventListener('click',genBindQR);
     document.getElementById('scanQR').addEventListener('click',startScan);
     document.getElementById('stopScan').addEventListener('click',stopScan);
     document.getElementById('bindDo').addEventListener('click',()=>{ const code=document.getElementById('bindCode').value.trim(); handleBind(code) });
     function pushChat(text,who){ const box=document.getElementById('uChat'); const d=document.createElement('div'); d.style.borderRadius='12px'; d.style.padding='10px 12px'; d.style.maxWidth='80%'; d.style.background= who==='user' ? '#162235' : '#0f1a2b'; d.style.alignSelf= who==='user' ? 'flex-end' : 'flex-start'; d.textContent=text; box.appendChild(d); box.scrollTop=box.scrollHeight }
-    function tokenize(s){ return (s||'').toLowerCase().replace(/[^a-z0-9áéíóúâêîôûãõç ]/g,' ').split(/\s+/).filter(Boolean) }
+    const STOP=['de','da','do','das','dos','e','ou','o','a','os','as','um','uma','uns','umas','para','por','com','sem','no','na','nos','nas','em','ao','à','às','aos','que','como','porque','quando','onde','quanto','qual','quais','sobre'];
+    function tokenize(s){ return (s||'').toLowerCase().replace(/[^a-z0-9áéíóúâêîôûãõç ]/g,' ').split(/\s+/).filter(Boolean).filter(w=>!STOP.includes(w)) }
     function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)] }
-    function parseTrain(train){ const cfg={}; const lines=(train||'').split(/\n+/).map(s=>s.trim()); cfg.faq=[]; for(const ln of lines){ if(/^tom\s*:/i.test(ln)) cfg.tone=ln.split(':')[1].trim(); else if(/^saudação\s*:/i.test(ln)) cfg.greet=ln.split(':')[1].trim(); else if(/^encerramento\s*:/i.test(ln)) cfg.close=ln.split(':')[1].trim(); else if(/^regra\s*:/i.test(ln)) { cfg.rules=(cfg.rules||[]); cfg.rules.push(ln.split(':')[1].trim()); } else if(/^q\s*:/i.test(ln)) { cfg.faq.push({q:ln.split(':')[1].trim(),a:''}); } else if(/^a\s*:/i.test(ln)) { const last=cfg.faq[cfg.faq.length-1]; if(last) last.a=ln.split(':')[1].trim(); } } return cfg }
-    function aiReply(q,u){ if(u.ai.handover) return null; const t=tokenize(q); const trainRaw=(u.ai.training||''); const train=trainRaw.toLowerCase(); const cfg=parseTrain(trainRaw); const triggers=(u.ai.triggers||[]).map(x=>x.toLowerCase()); const responses=u.ai.responses||[];
+    function parseTrain(train){ const cfg={}; const lines=(train||'').split(/\n+/).map(s=>s.trim()); cfg.faq=[]; for(const ln of lines){ if(/^tom\s*:/i.test(ln)) cfg.tone=ln.split(':')[1].trim(); else if(/^saudação\s*:/i.test(ln)) cfg.greet=ln.split(':')[1].trim(); else if(/^encerramento\s*:/i.test(ln)) cfg.close=ln.split(':')[1].trim(); else if(/^horário\s*:/i.test(ln)) cfg.hours=ln.split(':')[1].trim(); else if(/^offline\s*:/i.test(ln)) cfg.offline=ln.split(':')[1].trim(); else if(/^regra\s*:/i.test(ln)) { cfg.rules=(cfg.rules||[]); cfg.rules.push(ln.split(':')[1].trim()); } else if(/^q\s*:/i.test(ln)) { cfg.faq.push({q:ln.split(':')[1].trim(),a:''}); } else if(/^a\s*:/i.test(ln)) { const last=cfg.faq[cfg.faq.length-1]; if(last) last.a=ln.split(':')[1].trim(); } } return cfg }
+    function parseHours(s){ const m=/([0-2]?\d)h\s*às\s*([0-2]?\d)h/i.exec(s||''); if(!m) return null; return {start:parseInt(m[1],10), end:parseInt(m[2],10)} }
+    function aiReply(q,u){ if(u.ai.handover) return null; const t=tokenize(q); const trainRaw=(u.ai.training||''); const train=trainRaw.toLowerCase(); const cfg=parseTrain(trainRaw); const hs=parseHours(cfg.hours); const now=new Date(); const hour=now.getHours(); if(hs && (hour<hs.start || hour>=hs.end) && cfg.offline){ incMetric('intent'); return [cfg.greet,cfg.offline,cfg.close].filter(Boolean).join(' ') } const triggers=(u.ai.triggers||[]).map(x=>x.toLowerCase()); const responses=u.ai.responses||[];
       const intent=(keys)=> keys.some(k=> t.includes(k));
       const kb={
         price: intent(['preço','valor','custa','orçamento']),
@@ -340,12 +349,14 @@
         payment: intent(['pagamento','pix','cartão','pagar']),
         contact: intent(['contato','whatsapp','telefone']),
       };
-      for(const trg of triggers){ if(t.includes(trg)){ const res=rnd([responses[0],'Certo, já envio as informações.','Perfeito, vou cuidar disso agora.'].filter(Boolean)); return [cfg.greet,res,cfg.close].filter(Boolean).join(' ') } }
-      if(kb.price){ const fromTrain=(train.match(/preço[:\-]\s*(.*)/)||train.match(/valor[:\-]\s*(.*)/)); const base=rnd(['Os valores variam conforme a necessidade.','Trabalhamos sob demanda, o valor depende do escopo.','O investimento é calculado conforme a complexidade.']); const msg=(fromTrain?(' '+fromTrain[1]):''); return [cfg.greet,base+msg,'Posso estimar agora se preferir.',cfg.close].filter(Boolean).join(' ') }
-      if(kb.hours){ const m=(train.match(/horário[:\-]\s*(.*)/)); const base=rnd(['Temos atendimento em janelas estendidas.','Respondemos rápido ao longo do dia.']); const msg=(m?(' Horário: '+m[1]):''); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
-      if(kb.delivery){ const m=(train.match(/prazo[:\-]\s*(.*)/)); const base=rnd(['O prazo depende do escopo.','A entrega é ágil e organizada.']); const msg=(m?(' Prazo: '+m[1]):' Em geral, 1–3 dias.'); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
-      if(kb.payment){ const m=(train.match(/pagamento[:\-]\s*(.*)/)); const base=rnd(['Podemos confirmar via WhatsApp.','Suportamos PIX e cartão.']); const msg=(m?(' Formas: '+m[1]):''); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
-      if(kb.contact){ const m=(train.match(/contato[:\-]\s*(.*)/)); const msg=(m?(' Contato: '+m[1]):'Posso te encaminhar ao WhatsApp agora.'); return [cfg.greet,msg,cfg.close].filter(Boolean).join(' ') }
+      const flows=(u.ai.flows||[]);
+      for(const f of flows){ if(t.includes((f.t||'').toLowerCase())){ incMetric('intent'); return [cfg.greet,f.r,cfg.close].filter(Boolean).join(' ') } }
+      for(const trg of triggers){ if(t.includes(trg)){ incMetric('intent'); const res=rnd([responses[0],'Certo, já envio as informações.','Perfeito, vou cuidar disso agora.'].filter(Boolean)); return [cfg.greet,res,cfg.close].filter(Boolean).join(' ') } }
+      if(kb.price){ incMetric('intent'); const fromTrain=(train.match(/preço[:\-]\s*(.*)/)||train.match(/valor[:\-]\s*(.*)/)); const base=rnd(['Os valores variam conforme a necessidade.','Trabalhamos sob demanda, o valor depende do escopo.','O investimento é calculado conforme a complexidade.']); const msg=(fromTrain?(' '+fromTrain[1]):''); return [cfg.greet,base+msg,'Posso estimar agora se preferir.',cfg.close].filter(Boolean).join(' ') }
+      if(kb.hours){ incMetric('intent'); const m=(train.match(/horário[:\-]\s*(.*)/)); const base=rnd(['Temos atendimento em janelas estendidas.','Respondemos rápido ao longo do dia.']); const msg=(m?(' Horário: '+m[1]):''); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
+      if(kb.delivery){ incMetric('intent'); const m=(train.match(/prazo[:\-]\s*(.*)/)); const base=rnd(['O prazo depende do escopo.','A entrega é ágil e organizada.']); const msg=(m?(' Prazo: '+m[1]):' Em geral, 1–3 dias.'); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
+      if(kb.payment){ incMetric('intent'); const m=(train.match(/pagamento[:\-]\s*(.*)/)); const base=rnd(['Podemos confirmar via WhatsApp.','Suportamos PIX e cartão.']); const msg=(m?(' Formas: '+m[1]):''); return [cfg.greet,base+msg,cfg.close].filter(Boolean).join(' ') }
+      if(kb.contact){ incMetric('intent'); const m=(train.match(/contato[:\-]\s*(.*)/)); const msg=(m?(' Contato: '+m[1]):'Posso te encaminhar ao WhatsApp agora.'); return [cfg.greet,msg,cfg.close].filter(Boolean).join(' ') }
       let best=null,score=0; for(const qa of (cfg.faq||[])){ const toks=tokenize(qa.q); const s=toks.filter(x=>t.includes(x)).length; if(s>score){ score=s; best=qa } }
       if(best&&best.a){ return [cfg.greet,best.a,cfg.close].filter(Boolean).join(' ') }
       const domainWords=(train.match(/[a-záéíóúâêîôûãõç]{4,}/gi)||[]).slice(0,12).filter((v,i,a)=>a.indexOf(v)===i);
@@ -355,7 +366,7 @@
     document.getElementById('uSend').addEventListener('click',()=>{ const u=me(); if(!u){ alert('Entre na conta primeiro'); return;} const ask=document.getElementById('uAsk').value.trim(); if(!ask) return; pushChat(ask,'user'); const ans=aiReply(ask,u); if(ans===null){ pushChat('Atendimento humano assumiu. A IA está pausada.','bot'); return; } setTimeout(()=>{ pushChat(ans,'bot'); },500) });
     document.getElementById('rDo').addEventListener('click',()=>{ const ok=register(document.getElementById('rName').value,document.getElementById('rEmail').value,document.getElementById('rWhats').value,document.getElementById('rPass').value); if(!ok.ok){ alert(ok.msg||'Erro'); return; } alert('Conta criada'); showUser(); });
     document.getElementById('lDo').addEventListener('click',()=>{ const ok=login(document.getElementById('lEmail').value,document.getElementById('lPass').value); if(!ok.ok){ alert('Credenciais inválidas'); return; } showUser(); });
-    function showUser(){ const u=me(); if(!u){ document.getElementById('user').style.display='none'; return; } document.getElementById('user').style.display='block'; document.getElementById('uAi').textContent=u.ai.enabled?'Ativa':'Inativa'; document.getElementById('uWa').textContent=u.whatsapp.connected?'Conectado':'Desconectado'; const ho=document.getElementById('uHo'); if(ho) ho.textContent=u.ai.handover?'Ligado':'Desligado'; const met=getMetrics()[u.id]||{messages:0,conversations:0,clients:0}; document.getElementById('mMsg').textContent=met.messages; document.getElementById('mConv').textContent=met.conversations; document.getElementById('mCli').textContent=met.clients; const respList=document.getElementById('respList'); respList.innerHTML=''; for(const r of (u.ai.responses||[])){ const li=document.createElement('li'); li.textContent=r; respList.appendChild(li);} const gatList=document.getElementById('gatList'); gatList.innerHTML=''; for(const g of (u.ai.triggers||[])){ const li=document.createElement('li'); li.textContent=g; gatList.appendChild(li);} document.getElementById('trainText').value=u.ai.training||''; }
+    function showUser(){ const u=me(); if(!u){ document.getElementById('user').style.display='none'; return; } document.getElementById('user').style.display='block'; document.getElementById('uAi').textContent=u.ai.enabled?'Ativa':'Inativa'; document.getElementById('uWa').textContent=u.whatsapp.connected?'Conectado':'Desconectado'; const ho=document.getElementById('uHo'); if(ho) ho.textContent=u.ai.handover?'Ligado':'Desligado'; const met=getMetrics()[u.id]||{messages:0,conversations:0,clients:0,intent:0}; document.getElementById('mMsg').textContent=met.messages; document.getElementById('mConv').textContent=met.conversations; document.getElementById('mCli').textContent=met.clients; const mi=document.getElementById('mInt'); if(mi) mi.textContent=met.intent||0; const respList=document.getElementById('respList'); respList.innerHTML=''; for(const r of (u.ai.responses||[])){ const li=document.createElement('li'); li.textContent=r; respList.appendChild(li);} const gatList=document.getElementById('gatList'); gatList.innerHTML=''; for(const g of (u.ai.triggers||[])){ const li=document.createElement('li'); li.textContent=g; gatList.appendChild(li);} document.getElementById('trainText').value=u.ai.training||''; }
     document.getElementById('uToggleAi').addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.enabled=!u.ai.enabled; updateUser(u); showUser() });
     document.getElementById('uToggleWa').addEventListener('click',()=>{ const u=me(); if(!u) return; u.whatsapp.connected=!u.whatsapp.connected; updateUser(u); showUser() });
     document.getElementById('uHandover')?.addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.handover=true; updateUser(u); showUser(); alert('IA pausada: atendimento humano assumiu.') });
@@ -364,14 +375,16 @@
     document.getElementById('respAdd').addEventListener('click',()=>{ const u=me(); if(!u) return; const v=document.getElementById('respIn').value.trim(); if(!v) return; u.ai.responses=u.ai.responses||[]; u.ai.responses.push(v); updateUser(u); incMetric('msg'); document.getElementById('respIn').value=''; showUser() });
     document.getElementById('gatAdd').addEventListener('click',()=>{ const u=me(); if(!u) return; const v=document.getElementById('gatIn').value.trim(); if(!v) return; u.ai.triggers=u.ai.triggers||[]; u.ai.triggers.push(v); updateUser(u); incMetric('conv'); document.getElementById('gatIn').value=''; showUser() });
     document.getElementById('trainSave').addEventListener('click',()=>{ const u=me(); if(!u) return; u.ai.training=document.getElementById('trainText').value; updateUser(u); incMetric('cli'); alert('Treino salvo'); showUser() });
-    function checklist(u){ const items=[]; const hasLogo=!!localStorage.getItem(L_LOGO); const hasTrain=(u.ai.training||'').trim().length>=60; const hasResp=(u.ai.responses||[]).length>0; const hasTrig=(u.ai.triggers||[]).length>0; const wa=u.whatsapp.connected; items.push({ok:hasLogo, text:'Logo oficial carregada'}); items.push({ok:hasTrain, text:'Treino preenchido com TOM, saudação, regras e FAQ'}); items.push({ok:hasResp, text:'Pelo menos 1 resposta preferida'}); items.push({ok:hasTrig, text:'Pelo menos 1 gatilho'}); items.push({ok:wa, text:'WhatsApp conectado pelo QR'}); return {items, ready: hasLogo&&hasTrain&&hasResp&&hasTrig&&wa} }
+    document.getElementById('flowAdd').addEventListener('click',()=>{ const u=me(); if(!u) return; const t=document.getElementById('flowTrig').value.trim(); const r=document.getElementById('flowResp').value.trim(); if(!t||!r){ alert('Preencha gatilho e resposta'); return; } u.ai.flows=u.ai.flows||[]; u.ai.flows.push({t,r}); updateUser(u); document.getElementById('flowTrig').value=''; document.getElementById('flowResp').value=''; renderFlows(); });
+    function renderFlows(){ const u=me(); if(!u) return; const list=document.getElementById('flowList'); if(!list) return; list.innerHTML=''; for(const f of (u.ai.flows||[])){ const li=document.createElement('li'); li.textContent=f.t+' → '+f.r; list.appendChild(li); } }
+    function checklist(u){ const items=[]; const hasLogo=!!currentLogoUrl(); const hasTrain=(u.ai.training||'').trim().length>=60; const hasResp=(u.ai.responses||[]).length>0; const hasTrig=(u.ai.triggers||[]).length>0; const wa=u.whatsapp.connected; items.push({ok:hasLogo, text:'Logo oficial carregada'}); items.push({ok:hasTrain, text:'Treino preenchido com TOM, saudação, regras e FAQ'}); items.push({ok:hasResp, text:'Pelo menos 1 resposta preferida'}); items.push({ok:hasTrig, text:'Pelo menos 1 gatilho'}); items.push({ok:wa, text:'WhatsApp conectado pelo QR'}); return {items, ready: hasLogo&&hasTrain&&hasResp&&hasTrig&&wa} }
     function renderTutorial(){ const u=me(); if(!u) return; const c=checklist(u); const el=document.getElementById('uChecklist'); const rd=document.getElementById('uReady'); if(el) el.innerHTML=c.items.map(i=>`<div>${i.ok?'✅':'❌'} ${i.text}</div>`).join(''); if(rd) rd.textContent=c.ready?'Tudo pronto para usar.':'Faltam itens na configuração.' }
     document.getElementById('uValidate')?.addEventListener('click',()=>{ renderTutorial() });
     document.getElementById('uActivate')?.addEventListener('click',()=>{ const u=me(); if(!u) return; const c=checklist(u); if(!c.ready){ renderTutorial(); alert('Complete os itens pendentes antes de ativar.'); return; } u.ai.enabled=true; updateUser(u); showUser(); renderTutorial(); alert('IA ativada e pronta para usar.') })
     document.getElementById('adDo').addEventListener('click',()=>{ const u=document.getElementById('adUser').value; const p=document.getElementById('adPass').value; if(u==='Admin'&&p==='Luckas2411'){ document.getElementById('adLogin').style.display='none'; document.getElementById('adPanel').style.display='block'; renderAdmin(); } else { alert('Credenciais inválidas') } });
-    document.getElementById('adLogoSave').addEventListener('click',async()=>{ const f=document.getElementById('adLogoFile').files[0]; if(!f){ alert('Selecione um arquivo de imagem'); return; } const du=await fileToDataUrl(f); if(!du){ alert('Falha ao ler arquivo'); return; } localStorage.setItem(L_LOGO,du); applyLogo(); alert('Logo atualizada'); });
-    document.getElementById('adLogoSave').addEventListener('click',async()=>{ const f=document.getElementById('adLogoFile').files[0]; if(!f){ alert('Selecione um arquivo de imagem'); return; } const du=await fileToDataUrl(f); if(!du){ alert('Falha ao ler arquivo'); return; } localStorage.setItem(L_LOGO,du); applyLogo(); alert('Logo atualizada'); });
-    function renderAdmin(){ const users=getUsers(); const plans=getPlans(); const tbody=document.querySelector('#tUsers tbody'); tbody.innerHTML=''; for(const u of users){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${u.name}</td><td>${u.email}</td><td>${u.ai.enabled?'Ativa':'Inativa'}</td><td>${u.whatsapp.connected?'Conectado':'Desconectado'}</td><td>${plans.find(p=>p.id===u.plan)?.name||u.plan}</td><td>${u.active?'Ativo':'Inativo'}</td><td><button data-act='toggle' data-id='${u.id}'>Ativar/Desativar</button></td>`; tbody.appendChild(tr);} tbody.querySelectorAll('button').forEach(b=>b.addEventListener('click',onAdminUserAction)); const met=getMetrics(); const tbodyM=document.querySelector('#tMetrics tbody'); tbodyM.innerHTML=''; for(const u of users){ const m=met[u.id]||{messages:0,conversations:0,clients:0}; const tr=document.createElement('tr'); tr.innerHTML=`<td>${u.email}</td><td>${m.messages}</td><td>${m.conversations}</td><td>${m.clients}</td>`; tbodyM.appendChild(tr);} const adPlans=document.getElementById('adPlans'); adPlans.innerHTML=''; for(const p of plans){ const card=document.createElement('div'); card.className='card'; card.innerHTML=`<h4>${p.name}</h4><div class='muted'>R$ ${p.price}/mês</div><ul style='margin-top:8px'>${p.features.map(f=>`<li>${f}</li>`).join('')}</ul><div style='display:flex; gap:10px; margin-top:8px'><input data-id='${p.id}' class='pPrice' placeholder='Novo preço' /><button data-id='${p.id}' class='pSave btn btn-secondary'>Salvar</button></div>`; adPlans.appendChild(card);} const asPlan=document.getElementById('asPlan'); asPlan.innerHTML=''; for(const p of plans){ const opt=document.createElement('option'); opt.value=p.id; opt.textContent=p.name; asPlan.appendChild(opt); }
+    document.getElementById('adLogoSave').addEventListener('click',async()=>{ const inUrl=(document.getElementById('adLogoUrl').value||'').trim(); if(inUrl){ if(!/\.png(\?|$)/i.test(inUrl)){ alert('Informe um URL direto para arquivo PNG (.png)'); return; } localStorage.setItem(L_LOGO_URL,inUrl); applyLogo(); alert('Logo atualizada via URL'); return; } const f=document.getElementById('adLogoFile').files[0]; if(!f){ alert('Selecione um arquivo de imagem ou informe o URL .png'); return; } const du=await fileToDataUrl(f); if(!du){ alert('Falha ao ler arquivo'); return; } localStorage.setItem(L_LOGO_URL,du); applyLogo(); alert('Logo atualizada via arquivo'); });
+    document.addEventListener('keydown',(e)=>{ if(e.shiftKey&&e.altKey&&e.key.toLowerCase()==='a'){ document.getElementById('adLogin').style.display='block'; window.location.hash='#admin'; } })
+    function renderAdmin(){ const users=getUsers(); const plans=getPlans(); const tbody=document.querySelector('#tUsers tbody'); tbody.innerHTML=''; for(const u of users){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${u.name}</td><td>${u.email}</td><td>${u.ai.enabled?'Ativa':'Inativa'}</td><td>${u.whatsapp.connected?'Conectado':'Desconectado'}</td><td>${plans.find(p=>p.id===u.plan)?.name||u.plan}</td><td>${u.active?'Ativo':'Inativo'}</td><td><button data-act='toggle' data-id='${u.id}'>Ativar/Desativar</button></td>`; tbody.appendChild(tr);} tbody.querySelectorAll('button').forEach(b=>b.addEventListener('click',onAdminUserAction)); const met=getMetrics(); const tbodyM=document.querySelector('#tMetrics tbody'); tbodyM.innerHTML=''; for(const u of users){ const m=met[u.id]||{messages:0,conversations:0,clients:0,intent:0}; const tr=document.createElement('tr'); tr.innerHTML=`<td>${u.email}</td><td>${m.messages}</td><td>${m.conversations}</td><td>${m.clients}</td><td>${m.intent||0}</td>`; tbodyM.appendChild(tr);} const adPlans=document.getElementById('adPlans'); adPlans.innerHTML=''; for(const p of plans){ const card=document.createElement('div'); card.className='card'; card.innerHTML=`<h4>${p.name}</h4><div class='muted'>R$ ${p.price}/mês</div><ul style='margin-top:8px'>${p.features.map(f=>`<li>${f}</li>`).join('')}</ul><div style='display:flex; gap:10px; margin-top:8px'><input data-id='${p.id}' class='pPrice' placeholder='Novo preço' /><button data-id='${p.id}' class='pSave btn btn-secondary'>Salvar</button></div>`; adPlans.appendChild(card);} const asPlan=document.getElementById('asPlan'); asPlan.innerHTML=''; for(const p of plans){ const opt=document.createElement('option'); opt.value=p.id; opt.textContent=p.name; asPlan.appendChild(opt); }
     }
     function onAdminUserAction(e){ const id=e.currentTarget.getAttribute('data-id'); const users=getUsers(); const i=users.findIndex(u=>u.id===id); if(i>-1){ users[i].active=!users[i].active; setUsers(users); renderAdmin(); } }
     document.getElementById('asSet').addEventListener('click',()=>{ const email=document.getElementById('asEmail').value; const plan=document.getElementById('asPlan').value; const users=getUsers(); const i=users.findIndex(u=>u.email===email); if(i>-1){ users[i].plan=plan; setUsers(users); alert('Plano atualizado'); renderAdmin(); } else { alert('Usuário não encontrado') } });
@@ -379,5 +392,3 @@
   </script>
 </body>
 </html>
-    function applyLogo(){ const src=localStorage.getItem(L_LOGO)||'logo.png'; document.querySelectorAll('img.logo').forEach(el=>{ el.src=src; }); }
-    async function fileToDataUrl(file){ return new Promise((res,reject)=>{ if(!file){ res(null); return; } const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=reject; r.readAsDataURL(file); }); }
