@@ -69,6 +69,7 @@
         <a href="#como">Como Funciona</a>
         <a href="#planos">Planos</a>
         <a href="#depoimentos">Depoimentos</a>
+        <a href="#admin">Admin</a>
         <a href="#conta">Entrar</a>
         <a href="#conta" class="btn btn-primary">Criar Minha IA Agora</a>
       </nav>
@@ -260,9 +261,10 @@
   </section>
 
   <footer class="footer">
-    <div class="footer-inner">
-      <div class="brand"><img class="logo" src="logo.png" alt="LUXIAFLOW – IA" style="width:120px" /></div>
+      <div class="footer-inner">
+        <div class="brand"><img class="logo" src="logo.png" alt="LUXIAFLOW – IA" style="width:120px" /></div>
       <div class="footer-links">
+        <a href="#admin">Admin</a>
         <a href="#">Termos</a>
         <a href="#">Direitos autorais</a>
         <span class="muted">Feito por Lucas</span>
@@ -328,6 +330,8 @@
     menuBtn.addEventListener('click',toggleMenu);
     overlay.addEventListener('click',toggleMenu);
     nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ if(nav.classList.contains('open')) toggleMenu(); }));
+    const adminLink=nav.querySelector('a[href="#admin"]');
+    if(adminLink){ adminLink.addEventListener('click',(e)=>{ e.preventDefault(); const ok=confirm('Área restrita. Continuar para o Admin?'); if(ok){ window.location.hash='#admin'; } }); }
     renderPlans();
     applyLogo();
     document.getElementById('genQR').addEventListener('click',genBindQR);
@@ -392,3 +396,6 @@
   </script>
 </body>
 </html>
+    function route(){ const h=window.location.hash||''; const admin=document.getElementById('admin'); if(h==='#admin'){ admin.style.display='block'; document.getElementById('adLogin').style.display='block'; document.getElementById('adPanel').style.display='none'; } else { admin.style.display='none'; } }
+    window.addEventListener('hashchange',route);
+    route();
