@@ -184,9 +184,25 @@
         <div style="margin-top:10px"><button id="trainSave" class="btn btn-secondary">Salvar Treino</button></div>
       </div>
       <div class="card">
+        <h3>Testar IA</h3>
+        <div id="uChat" style="height:42vh; overflow:auto; display:flex; flex-direction:column; gap:10px; padding:10px; background:#0e1521; border:1px solid rgba(33,200,255,0.18); border-radius:12px"></div>
+        <div style="display:flex; gap:10px; margin-top:10px"><input id="uAsk" placeholder="Digite uma pergunta como seu cliente" /><button id="uSend" class="btn btn-primary">Perguntar</button></div>
+      </div>
+      <div class="card">
         <h3>Integração WhatsApp</h3>
-        <div id="qr" style="width:220px; height:220px; background:#0e1521; border:1px solid rgba(33,200,255,0.25); border-radius:12px; display:grid; place-items:center">QR</div>
-        <div class="muted" style="margin-top:8px">Escaneie o QR ou use API simulada.</div>
+        <div class="muted">1) Gere o QR de vinculação e escaneie com seu celular para conectar.</div>
+        <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; margin-top:8px">
+          <img id="qrImg" alt="QR de vinculação" style="width:220px; height:220px; background:#0e1521; border:1px solid rgba(33,200,255,0.25); border-radius:12px; object-fit:contain" />
+          <video id="qrVideo" playsinline style="width:240px; max-width:90vw; display:none; background:#0e1521; border:1px solid rgba(33,200,255,0.25); border-radius:12px"></video>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap">
+          <button id="genQR" class="btn btn-primary">Gerar QR de Vinculação</button>
+          <button id="scanQR" class="btn btn-secondary">Ler QR pela Câmera</button>
+          <button id="stopScan" class="btn btn-secondary">Parar Leitura</button>
+        </div>
+        <div class="muted" style="margin-top:8px">2) Caso seu navegador não tenha leitor de QR, digite o código:</div>
+        <div style="display:flex; gap:10px; margin-top:8px"><input id="bindCode" placeholder="Cole o código lido" /><button id="bindDo" class="btn btn-primary">Conectar</button></div>
+        <div class="muted" style="margin-top:8px">Após conectar, o status acima muda para “Conectado”.</div>
       </div>
     </div>
   </section>
@@ -258,7 +274,19 @@
     function updateUser(user){ const users=getUsers(); const i=users.findIndex(x=>x.id===user.id); if(i>-1){ users[i]=user; setUsers(users); } }
     function incMetric(type){ const s=getSession(); if(!s) return; const met=getMetrics(); const m=met[s.id]||{messages:0,conversations:0,clients:0}; if(type==='msg') m.messages++; if(type==='conv') m.conversations++; if(type==='cli') m.clients++; met[s.id]=m; setMetrics(met) }
     function renderPlans(){ const el=document.getElementById('plans'); el.innerHTML=''; const ps=getPlans(); for(const p of ps){ const div=document.createElement('div'); div.className='card'; div.innerHTML=`<h3>${p.name}</h3><div class='muted'>R$ ${p.price}/mês</div><ul style='margin-top:8px'>${p.features.map(f=>`<li>${f}</li>`).join('')}</ul><div style='margin-top:10px'><a href='#conta' class='btn btn-primary'>Assinar</a></div>`; el.appendChild(div);} }
-    function drawQR(){ const c=document.getElementById('qr'); c.textContent=''; const canvas=document.createElement('canvas'); canvas.width=220; canvas.height=220; c.appendChild(canvas); const ctx=canvas.getContext('2d'); ctx.fillStyle='#0e1521'; ctx.fillRect(0,0,220,220); ctx.strokeStyle='rgba(33,200,255,0.25)'; ctx.strokeRect(10,10,200,200); ctx.fillStyle='#21c8ff'; for(let i=0;i<1800;i++){const x=Math.random()*220,y=Math.random()*220; if(Math.random()<0.06) ctx.fillRect(x,y,2,2);} }
+    let scanning=false; let stream=null; let detector=null;
+    function genBindQR(){ const u=me(); if(!u){ alert('Entre na conta primeiro'); return;} const payload='BIND:'+u.id; const img=document.getElementById('qrImg'); img.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(payload); }
+    async function startScan(){ const video=document.getElementById('qrVideo'); try{
+        if(!('BarcodeDetector' in window)){ alert('Leitura de QR não suportada neste navegador. Use o código manual.'); return; }
+        detector=new BarcodeDetector({formats:['qr_code']});
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+        video.style.display='block';
+        video.srcObject=stream; await video.play(); scanning=true; scanLoop();
+      }catch(err){ alert('Não foi possível abrir a câmera'); }
+    }
+    async function scanLoop(){ if(!scanning||!detector) return; const video=document.getElementById('qrVideo'); try{ const codes=await detector.detect(video); if(codes&&codes.length){ handleBind(codes[0].rawValue); stopScan(); return; } }catch{} requestAnimationFrame(scanLoop); }
+    function stopScan(){ scanning=false; const video=document.getElementById('qrVideo'); video.style.display='none'; try{ if(stream){ stream.getTracks().forEach(t=>t.stop()); } }catch{} stream=null; detector=null; }
+    function handleBind(code){ if(!code||!code.startsWith('BIND:')){ alert('Código inválido'); return;} const u=me(); if(!u){ alert('Entre na conta primeiro'); return;} const id=code.slice(5); if(id!==u.id){ alert('Este QR não corresponde à sua conta'); return;} u.whatsapp.connected=true; updateUser(u); showUser(); alert('WhatsApp conectado com sucesso'); }
     seed();
     const revealEls=document.querySelectorAll('.reveal');
     const io=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}})},{threshold:0.25});
@@ -271,7 +299,32 @@
     overlay.addEventListener('click',toggleMenu);
     nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ if(nav.classList.contains('open')) toggleMenu(); }));
     renderPlans();
-    drawQR();
+    document.getElementById('genQR').addEventListener('click',genBindQR);
+    document.getElementById('scanQR').addEventListener('click',startScan);
+    document.getElementById('stopScan').addEventListener('click',stopScan);
+    document.getElementById('bindDo').addEventListener('click',()=>{ const code=document.getElementById('bindCode').value.trim(); handleBind(code) });
+    function pushChat(text,who){ const box=document.getElementById('uChat'); const d=document.createElement('div'); d.style.borderRadius='12px'; d.style.padding='10px 12px'; d.style.maxWidth='80%'; d.style.background= who==='user' ? '#162235' : '#0f1a2b'; d.style.alignSelf= who==='user' ? 'flex-end' : 'flex-start'; d.textContent=text; box.appendChild(d); box.scrollTop=box.scrollHeight }
+    function tokenize(s){ return (s||'').toLowerCase().replace(/[^a-z0-9áéíóúâêîôûãõç ]/g,' ').split(/\s+/).filter(Boolean) }
+    function aiReply(q,u){ const t=tokenize(q); const train=(u.ai.training||'').toLowerCase(); const triggers=(u.ai.triggers||[]).map(x=>x.toLowerCase()); const responses=u.ai.responses||[];
+      const intent=(keys)=> keys.some(k=> t.includes(k));
+      const kb={
+        price: intent(['preço','valor','custa','orçamento']),
+        hours: intent(['horário','funciona','atendimento','abre','fecha']),
+        delivery: intent(['entrega','prazo','tempo','quando','demora']),
+        payment: intent(['pagamento','pix','cartão','pagar']),
+        contact: intent(['contato','whatsapp','telefone']),
+      };
+      for(const trg of triggers){ if(t.includes(trg)){ const res=responses[0]||'Entendi. Vou enviar as informações que você precisa.'; return res; } }
+      if(kb.price){ const fromTrain=(train.match(/preço[:\-]\s*(.*)/)||train.match(/valor[:\-]\s*(.*)/)); if(fromTrain) return 'Sobre valores: '+fromTrain[1]; return 'Os valores variam conforme a necessidade. Posso preparar um orçamento com base no que você precisa.' }
+      if(kb.hours){ const m=(train.match(/horário[:\-]\s*(.*)/)); if(m) return 'Nosso horário: '+m[1]; return 'Atendemos em janelas estendidas e respondemos rápido, inclusive fora do horário comercial.' }
+      if(kb.delivery){ const m=(train.match(/prazo[:\-]\s*(.*)/)); if(m) return 'Prazo: '+m[1]; return 'O prazo depende do escopo. Em geral, entregamos entre 1 e 3 dias.' }
+      if(kb.payment){ const m=(train.match(/pagamento[:\-]\s*(.*)/)); if(m) return 'Formas de pagamento: '+m[1]; return 'Aceitamos confirmação via WhatsApp e PIX. Posso enviar os dados agora.' }
+      if(kb.contact){ const m=(train.match(/contato[:\-]\s*(.*)/)); if(m) return 'Contato: '+m[1]; return 'Você pode falar com a gente pelo WhatsApp. Posso abrir o chat para você.' }
+      const domainWords=(train.match(/[a-záéíóúâêîôûãõç]{4,}/gi)||[]).slice(0,12).filter((v,i,a)=>a.indexOf(v)===i);
+      if(domainWords.length){ return 'Somos especialistas em '+domainWords.slice(0,4).join(', ')+' e atendemos de forma personalizada. Me diga o que precisa que eu te guio.' }
+      return 'Posso ajudar com preços, prazos, pagamento e detalhes do seu pedido. Me conte sua necessidade.'
+    }
+    document.getElementById('uSend').addEventListener('click',()=>{ const u=me(); if(!u){ alert('Entre na conta primeiro'); return;} const ask=document.getElementById('uAsk').value.trim(); if(!ask) return; pushChat(ask,'user'); const ans=aiReply(ask,u); setTimeout(()=>{ pushChat(ans,'bot'); },500) });
     document.getElementById('rDo').addEventListener('click',()=>{ const ok=register(document.getElementById('rName').value,document.getElementById('rEmail').value,document.getElementById('rWhats').value,document.getElementById('rPass').value); if(!ok.ok){ alert(ok.msg||'Erro'); return; } alert('Conta criada'); showUser(); });
     document.getElementById('lDo').addEventListener('click',()=>{ const ok=login(document.getElementById('lEmail').value,document.getElementById('lPass').value); if(!ok.ok){ alert('Credenciais inválidas'); return; } showUser(); });
     function showUser(){ const u=me(); if(!u){ document.getElementById('user').style.display='none'; return; } document.getElementById('user').style.display='block'; document.getElementById('uAi').textContent=u.ai.enabled?'Ativa':'Inativa'; document.getElementById('uWa').textContent=u.whatsapp.connected?'Conectado':'Desconectado'; const met=getMetrics()[u.id]||{messages:0,conversations:0,clients:0}; document.getElementById('mMsg').textContent=met.messages; document.getElementById('mConv').textContent=met.conversations; document.getElementById('mCli').textContent=met.clients; const respList=document.getElementById('respList'); respList.innerHTML=''; for(const r of (u.ai.responses||[])){ const li=document.createElement('li'); li.textContent=r; respList.appendChild(li);} const gatList=document.getElementById('gatList'); gatList.innerHTML=''; for(const g of (u.ai.triggers||[])){ const li=document.createElement('li'); li.textContent=g; gatList.appendChild(li);} document.getElementById('trainText').value=u.ai.training||''; }
